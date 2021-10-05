@@ -2115,8 +2115,318 @@ ALTER TABLE MEMBER ADD BINGO VARCHAR2(20);
 ALTER TABLE MEMBER MODIFY BINGO VARCHAR2(30);
 ALTER TABLE MEMBER RENAME COLUMN BINGO TO REMARK;
 SELECT * FROM MEMBER;
-        
 
+create view vm_empall as select * from emp;
+select * from vm_empall;
+update vm_empall 
+set job = 'SALESMAN'
+WHERE EMPNO = 7369;
+SELECT * FROM EMP;
+-- 뷰생성 CREATE VIEW 뷰이름 AS 조건 ;
+-- 뷰생성(수정불가)
+CREATE VIEW VM_EMP30READ AS SELECT EMPNO,ENAME,JOB FROM EMP WHERE DEPTNO = 30
+WITH READ ONLY;
+
+SELECT * FROM EMP;
+-- 뷰 삭제 
+DROP VIEW VM_EMPALL;
+DROP VIEW VM_EMP30READ;
+
+-- 시퀸스(수업에서 자주 사용)
+-- 오라클 데이터베이스에서 특정 규칙에 맞는 연속 숫자 생성
+CREATE SEQUENCE SEQ_DEPT_SEQUENCE
+INCREMENT BY 10 --옵션(기본값 1)
+START WITH 10 --옵션(기본값 1)
+MAXVALUE 90 --옵션(기본값 10의27승)
+MINVALUE 0--옵션(기본값 1)
+NOCYCLE CACHE 2;-- 옵션(CYCLE OR NOCYCLE , CACHE 는 미리 발급해 놓을 수 
+-- DEPT 테이블에서 부서번호를 10으로 시작해서 90까지 넣고 싶을 떄 
+CREATE TABLE DEPT_SEQUENCE AS SELECT * FROM DEPT WHERE 1<>1;
+
+INSERT INTO DEPT_SEQUENCE(DEPTNO,DNAME,LOC)
+VALUES(SEQ_DEPT_SEQUENCE.NEXTVAL,'DATABASE','SEOUL');
+
+SELECT * FROM DEPT_SEQUENCE;
+
+-- 시퀀스 수정
+ALTER SEQUENCE SEQ_DEPT_SEQUENCE
+INCREMENT BY 3
+MAXVALUE 99
+CYCLE;
+-- 시퀀스 삭제
+DROP SEQUENCE SEQ_DEPT_SEQUENCE;
+
+-- 인덱스 : 빠른 검색
+-- 데이터 검색 TABLE Full Scan, Index Scan
+CREATE index idx_emp_sal
+on emp(sal);-- sql 튜닝
+
+
+-- 제약조건을 사용한 테이블 생성
+create table userTBL(
+userid char(8) not null primary key,
+username varchar(10) not null);
+-- 인덱스 삭제 
+drop index idx_emp_sal;
+-- 실습 문제
+-- [실습1] 다음 SQL문을 작성해 보세요
+--① EMP테이블과 같은 구조의 데이터를 저장하는 EMPIDX 테이블을 생성하시오.
+create table empidx as select  * from emp;
+select * from empidx;
+--② 생성한 EMPIDX 테이블의 EMPNO 열에 IDX_EMPIDX_EMPNO 인덱스를 생성하시오.
+create index idx_empidx_empno on empidx(empno);
+
+--③ 인덱스가 잘 생성되었는지 데이터 사전 뷰를 통해 확인하시오.
+
+
+--[실습2] 실습1에서 생성한 EMPIDX 테이블의 데이터 중 
+--급여가 1500 초과인 사원들만 출력하는 EMPIDX_OVER15K 뷰를 생성하시오. 
+--(사원번호, 사원이름, 직책,부서번호,급여,추가수당 열을 가지고 있다)
+create view empidx_over15k 
+as select empno,ename,job,deptno,sal,comm 
+from empidx where sal>=1500;
+select * from empidx_over15k;
+--[실습3] 다음 SQL문을 작성해 보세요
+--① DEPT 테이블과 같은 열과 행 구성을 가지는 DEPTSEQ 테이블을 작성하시오.
+--② 생성한 DEPTSEQ 테이블의 DEPTNO 열에 사용할 시퀀스를 아래에 제시된 특성에 맞춰 생성해 보시오.
+create table deptseq as select * from dept;
+
+create sequence dept_seq 
+increment by 1
+START WITH 1
+maxvalue 99 
+minvalue 1
+NOCYCLE nocache;
+
+insert into deptseq values(dept_seq.nextval,'database','seoul');
+insert into deptseq values(dept_seq.nextval,'web','busan');
+insert into deptseq values(dept_seq.nextval,'mobile','ilsan');
+select * from deptseq;
+
+-- 제약조건 
+-- 데이터 무결성 유지 
+create table table_notnull(
+ login_id varchar2(20) not null,
+ login_pwd varchar2(20) not null,
+ tel varchar2(20));
+ 
+ insert into table_notnull 
+ values('test_01',null,'010-1234-2134');
+ -- tel 열은 null 허용
+ insert into table_notnull(login_id,login_pwd) 
+ values('test_01','test_01');
+ 
+ update table_notnull
+ set login_pwd = null
+ where login_id = 'test_01';
+ 
+ 
+ create table table_notnull2(
+ login_id varchar2(20) constraint TBLNN2_LOGIN_NN not null,
+ login_pwd varchar2(20)constraint TBLNN2_LOGINPWD_NN not null,
+ tel varchar2(20));
+ 
+ -- 제약조건 확인
+ -- 현재 데이터베이스에 접속한 사용자가 소유한 객체 정보 : USER_ 로 시작
+ SELECT OWNER, CONSTRAINT_NAME, CONSTRAINT_TYPE,TABLE_NAME
+ FROM USER_CONSTRAINTS
+ WHERE TABLE_NAME = 'TABLE_NOTNULL2';
+ 
+ -- 이미 생성한 테이블에 제약 조건 지정
+ --TABLE_NOTNULL 에 TEL 컬럼에 NOT NULL 추가
+ALTER TABLE TABLE_NOTNULL MODIFY(TEL NOT NULL);
+
+--UPDATE 를 통해 기존의 NULL 컬럼을 제거
+UPDATE TABLE_NOTNULL
+SET TEL ='010-1234-1234'
+WHERE LOGIN_ID= 'test_01';
+ 
+ SELECT * FROM TABLE_NOTNULL;
+ 
+ ALTER TABLE TABLE_NOTNULL2 MODIFY(TEL CONSTRAINT TBLNN_TEL_NN 
+ NOT NULL);
+ 
+-- 제약 조건 이름 변경
+ALTER TABLE TABLE_NOTNULL2 RENAME CONSTRAINT TBLNN_TEL_NN 
+TO TBLNN2_TEL_NN;
+ 
+ --제약조건 삭제
+ ALTER TABLE TABLE_NOTNULL2 DROP CONSTRAINT TBLNN2_TEL_NN;
+ 
+ --2) UNIQUE : 중복되지 않은 값
+  create table table_UNIQUE(
+ login_id varchar2(20) UNIQUE,
+ login_pwd varchar2(20) not null,
+ tel varchar2(20));
+ 
+ SELECT OWNER, CONSTRAINT_NAME, CONSTRAINT_TYPE,TABLE_NAME
+ FROM USER_CONSTRAINTS
+ WHERE TABLE_NAME = 'TABLE_UNIQUE';
+ 
+ INSERT INTO TABLE_UNIQUE
+ VALUES('TEST_ID_01','PWD081','010-1234-5678');
+ -- UNIQUE 제약조건은 NULL 삽입가능
+ INSERT INTO TABLE_UNIQUE
+ VALUES(NULL,'PWD082','010-1234-5679');
+ 
+   create table table_UNIQUE2(
+ login_id varchar2(20) CONSTRAINT TBLUNQ2_LOGID_UNQ UNIQUE,
+ login_pwd varchar2(20) CONSTRAINT TBLUNQ2_LOGPWD_UNQ not null,
+ tel varchar2(20));
+ 
+ -- 3) PRMARY KEY : NOT NULL + UNIQUE
+ --                 테이블 당 하나만 존재
+ --                 INDEX 자동 생성
+ --                 각 행을 식별하는 용도
+ 
+ 
+   create table table_PK(
+ login_id varchar2(20) PRIMARY KEY,
+ login_pwd varchar2(20) not null,
+ tel varchar2(20));
+ 
+ INSERT INTO TABLE_PK
+ VALUES('TEST_01','PWD01','010-1234-5678');
+ INSERT INTO TABLE_PK
+ VALUES('TEST_01','PWD02','010-1234-5678');
+ 
+  create table table_PK2(
+ login_id varchar2(20) CONSTRAINT TBLPK2_LOGID_PK PRIMARY KEY,
+ login_pwd varchar2(20)CONSTRAINT TBLPK2_LOGPWD_PK NOT NULL,
+ tel varchar2(20));
+ 
+ -- 제약조건을 지정하는 다른 방식
+ CREATE TABLE  TABLE_CON(
+    COL1 VARCHAR2(20),
+    COL2 VARCHAR2(20),
+    COL3 VARCHAR2(20),
+    PRIMARY KEY(COL1),
+    CONSTRAINT TBLCON_UNQ UNIQUE (COL2));
+    
+    
+-- foreign key : 외래키 
+--               서로 다른 테이블 간 관계 정의
+--               특정 테이블에서 pk 제약조건을 지정한 열을 다른 테이블의 특정열에서 참조
+-- 데이터 삭제 시 삭제할 데이터를 참조하는 처리를 어떻게 할 것인지 결정
+-- ON DELETE CASCADE : 열 데이터 삭제시 이 데이터를 참조하고 있는 데이터도 함꼐 삭제
+
+create table Dept_fk2(
+DEPTNO NUMBER(2) CONSTRAINT DEPTFK2_DEPTNO_PK PRIMARY KEY,
+DNAME VARCHAR2(14),
+LOC VARCHAR2(13));
+CREATE TABLE EMP_FK2(
+    EMPNO NUMBER(4) CONSTRAINT EMPFK2_EMPNO_PK PRIMARY KEY,
+    ENAME VARCHAR2(10),
+    JOB VARCHAR2(9),
+    MGR NUMBER (4),
+    HIREDATE DATE,
+    SAL NUMBER(7,2),
+    COMM NUMBER(7,2),
+    DEPTNO NUMBER(2) CONSTRAINT EMPFK2_DEPTNO_FK 
+    REFERENCES DEPT_FK(DEPTNO)ON DELETE CASCADE );
+--무결성 제약조건(C##SCOTT.EMPFK_DEPTNO_FK)이 위배되었습니다
+-- 부모키가 없습니다    
+INSERT INTO EMP_FK
+VALUES(9999,'TEST_NAME','TEST_JOB',NULL,'21-10-05',3000,NULL,10);
+    
+-- 외래 키 수행 순서
+-- 부모 테이블에 해당하는 데이터 삽입
+-- 자식 테이블 데이터 삽입
+INSERT INTO DEPT_FK VALUES(10,'DATABASE','SEOUL');
+-- 외래키 참조 행 데이터 삭제
+DELETE FROM EMP_FK WHERE DEPTNO = 10;
+DELETE FROM DEPT_FK WHERE DEPTNO = 10;
+
+INSERT INTO DEPT_FK2 VALUES(10,'DATABASE','SEOUL');
+INSERT INTO EMP_FK2
+VALUES(9999,'TEST_NAME','TEST_JOB',NULL,'21-10-05',3000,NULL,10);
+DELETE FROM DEPT_FK2 WHERE DEPTNO = 10;
+SELECT * FROM DEPT_FK2;
+SELECT * FROM EMP_FK2;
+
+-- ON DELETE SET NULL : 열 데이터를 삭제할 때 이 데이터를 참조하는
+-- 데이터를 NULL 수정
+
+
+CREATE TABLE EMP_FK3(
+    EMPNO NUMBER(4) CONSTRAINT EMPFK3_EMPNO_PK PRIMARY KEY,
+    ENAME VARCHAR2(10),
+    JOB VARCHAR2(9),
+    MGR NUMBER (4),
+    HIREDATE DATE,
+    SAL NUMBER(7,2),
+    COMM NUMBER(7,2),
+    DEPTNO NUMBER(2) CONSTRAINT EMPFK3_DEPTNO_FK 
+    REFERENCES DEPT_FK2(DEPTNO)ON DELETE SET NULL );
+INSERT INTO DEPT_FK2 VALUES(10,'DATABASE','SEOUL');
+INSERT INTO EMP_FK3
+VALUES(9999,'TEST_NAME','TEST_JOB',NULL,'21-10-05',3000,NULL,10);
+DELETE FROM DEPT_FK2 WHERE DEPTNO = 10;
+
+-- 5) CHECK : 열에 저장할 수 있는 값의 범위 또는 패턴 정의 
+--          :  EX) 시간 0~23 숫자만 허용
+CREATE TABLE TABLE_CHECK(
+LOGIN_ID VARCHAR2(20) CONSTRAINT TBLCK_LGNID_PK PRIMARY KEY,
+LOGIN_PWD VARCHAR2(20) CONSTRAINT TBLCK_LGNPWD_NN
+CHECK(LENGTH(LOGIN_PWD)>3),
+TEL VARCHAR2(20));
+
+INSERT INTO TABLE_CHECK VALUES('TEST_ID','123','010-1234-5678');
+-- 기본값을 지정 DEFAULT
+-- 특정 열에 저장할 값이 지정되지 않았을 경우에 입력되는 기본값
+CREATE TABLE TABLE_DEFAULT(
+LOGIN_ID VARCHAR2(20) CONSTRAINT TBLDF_LGNID_PK PRIMARY KEY,
+LOGIN_PWD VARCHAR2(20) DEFAULT '1234',
+TEL VARCHAR2(20));
+
+INSERT INTO TABLE_DEFAULT(LOGIN_ID,LOGIN_PWD)
+VALUES('TEST_ID','TEST_ID');
+INSERT INTO TABLE_DEFAULT(LOGIN_ID,TEL)
+VALUES('TEST_ID2','010-5678-1234');
+INSERT INTO TABLE_DEFAULT(LOGIN_ID,LOGIN_PWD,TEL)
+VALUES('TEST_ID3',NULL,'010-1234-1234');
+
+SELECT * FROM TABLE_DEFAULT;
+
+-- 실습
+
+-- DEPT_CONST 테이블 생성
+-- DEPTNO 정수형 숫자 길이 2, 제약조건 PRIMARY KEY 
+-- 제약조건명 DEPTCONST_DEPTNO_PK
+-- DNAME 가변형 문자 길이 14, 제약조건 UNIQUE 
+-- 제약조건명 DEPTCONST_DNAME_UNQ
+-- LOC 가변형 문자 길이 13, 제약조건 NOT NULL 
+-- 제약조건명 DEPTCONST_LOC_NN
+CREATE TABLE DEPT_CONST(
+    DEPTNO NUMBER(2)CONSTRAINT DEPTCONST_DEPTNO_PK PRIMARY KEY,
+    DNAME VARCHAR2(14) CONSTRAINT DEPTCONST_DNAME_UNQ UNIQUE,
+    LOC VARCHAR2(13) CONSTRAINT DEPTCONST_LOC_NN NOT NULL
+);
+-- 문 2) EMP_CONST 테이블 생성
+-- EMPNO 정수형 숫자, 길이 2, 제약조건 PRIMARY KEY,
+-- 제약조건명 EMPCONST_EMPNO_PK
+-- ENAME 가변형 문자, 길이 10, 제약조건 NOT NULL,
+-- EMPCONST_ENAME_NN
+-- JOB 가변형 문자, 길이 9,
+-- TEL 가변형 문자, 길이 20, 제약조건 UNIQUE. 
+-- 제약조건명 EMPCONST_TEL_UNQ
+-- HIREDATE 날짜,
+-- SAL 정수형 숫자, 길이 7, 소수점 둘쨰자리까지 허용, 제약조건 CHECK
+-- (급여는1000~9999만 입력가능)
+-- 제약조건명 EMPCONST_SAL_CHK
+-- COMM 정수형 숫자, 길이 7, 소수점 둘째자리까지 허용
+-- DEPTNO 정수형 숫자, 길이 2, 제약조건 FOREIGN KEY,
+-- 제약조건명 EMPCONST_DEPTNO_FK
+CREATE TABLE EMP_CONST(
+    EMPNO NUMBER(2) CONSTRAINT EMPCONST_EMPNO_PK PRIMARY KEY,
+    ENAME VARCHAR2(10) CONSTRAINT EMPCONST_ENAME_NN NOT NULL,
+    JOB VARCHAR2(9),
+    TEL VARCHAR2(20) CONSTRAINT EMPCONST_TEL_UNQ UNIQUE,
+    HIREDATE DATE,
+    SAL NUMBER(7,2) CONSTRAINT EMPCONST_SAL_CHK CHECK(SAL BETWEEN 1000 AND 9999),
+    COMM NUMBER(7,2),
+    DEPTNO NUMBER(2) CONSTRAINT EMPCONST_DEPTNO_FK REFERENCES DEPT_CONST(DEPTNO)
+    );
 
 
 
